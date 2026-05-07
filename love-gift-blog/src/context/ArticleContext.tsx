@@ -2,7 +2,7 @@ import { createContext, useContext, useState, useEffect, useCallback } from 'rea
 import type { ReactNode } from 'react';
 import type { Article, Tag } from '@/data/articles';
 import { tags as initialTags } from '@/data/articles';
-import { fetchArticles, createArticle, updateArticle, deleteArticle, fetchArticle } from '../services/articleService';
+import { fetchArticles, createArticle, updateArticle, deleteArticle } from '../services/articleService';
 
 interface ArticleContextType {
   articles: Article[];
@@ -52,12 +52,7 @@ export function ArticleProvider({ children }: { children: ReactNode }) {
 
   const addArticle = async (articleData: Omit<Article, 'id'>) => {
     try {
-      const newArticle = await createArticle({
-        title: articleData.title,
-        content: articleData.content,
-        excerpt: articleData.excerpt,
-        tags: articleData.tags,
-      });
+      const newArticle = await createArticle(articleData);
       setArticles(prev => [newArticle, ...prev]);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create article');
