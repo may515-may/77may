@@ -2,14 +2,28 @@
 
 ## 项目概述
 
-这是一个基于 **React + TypeScript + Vite** 构建的博客应用，使用了以下技术栈：
+这是一个基于 **React + TypeScript + Vite** 构建的全栈博客应用，支持多设备数据同步。
 
-- **框架**: React 19 + TypeScript
-- **构建工具**: Vite 7
-- **样式**: Tailwind CSS 3
-- **组件库**: shadcn/ui + Radix UI
-- **路由**: React Router DOM
-- **状态管理**: React Context
+### 技术栈
+
+| 分类 | 技术 | 版本 |
+|------|------|------|
+| 前端框架 | React | 19.2.0 |
+| 语言 | TypeScript | ~5.9.3 |
+| 构建工具 | Vite | 7.2.4 |
+| 样式框架 | Tailwind CSS | 3.4.19 |
+| 组件库 | shadcn/ui + Radix UI | - |
+| 路由 | React Router DOM | 7.15.0 |
+| 数据库 | SQLite + Prisma | - |
+| ORM | Prisma | 7.x |
+
+### 核心功能
+
+- ✅ **多设备同步**: 自动定时同步数据（每5秒刷新）
+- ✅ **CRUD 操作**: 创建、读取、更新、删除文章
+- ✅ **实时更新**: 任何设备的更改会自动同步到其他设备
+
+---
 
 ## 部署到 Vercel 的步骤
 
@@ -39,26 +53,10 @@ npm run build
 
 ### 步骤 2: 推送到 GitHub
 
-首先初始化 Git 仓库并推送到 GitHub：
-
 ```bash
-# 初始化 Git
-git init
-
-# 添加所有文件
 git add .
-
-# 创建 .gitignore 文件（如果不存在）
-# 确保包含 node_modules/, dist/, .env 等
-
-# 提交
-git commit -m "Initial commit"
-
-# 添加远程仓库（替换为你的 GitHub 仓库地址）
-git remote add origin https://github.com/may515-may/May77.git
-
-# 推送到 GitHub
-git push -u origin main
+git commit -m "Add backend with Prisma SQLite"
+git push origin main
 ```
 
 ---
@@ -70,12 +68,10 @@ git push -u origin main
 1. 访问 [Vercel Dashboard](https://vercel.com/dashboard)
 2. 点击 **Add New Project**
 3. 选择 **Import Git Repository**
-4. 选择你的 GitHub 仓库（`love-gift-blog`）
+4. 选择仓库 `may515-may/77may`
 5. 点击 **Import**
 
 #### 配置构建设置
-
-在配置页面，确保以下设置正确：
 
 | 设置项 | 值 | 说明 |
 |--------|-----|------|
@@ -84,66 +80,72 @@ git push -u origin main
 | Output Directory | `dist` | 输出目录 |
 | Node.js Version | 20.x | 建议使用 LTS 版本 |
 
+#### 配置环境变量
+
+在 Vercel 项目设置中添加环境变量：
+
+| 变量名 | 值 | 说明 |
+|--------|-----|------|
+| DATABASE_URL | `file:./dev.db` | SQLite 数据库路径 |
+
 点击 **Deploy** 开始部署。
 
 ---
 
-#### 方法 B: 使用 Vercel CLI 部署
+### 步骤 4: 数据库迁移（首次部署）
+
+部署完成后，需要初始化数据库：
 
 ```bash
 # 安装 Vercel CLI
 npm install -g vercel
 
-# 登录 Vercel
+# 登录
 vercel login
 
-# 在项目目录中初始化
-vercel
-
-# 部署到生产环境
-vercel --prod
+# 运行数据库迁移
+vercel run npx prisma migrate deploy --prod
 ```
-
----
-
-### 步骤 4: 配置环境变量（如需要）
-
-如果项目使用环境变量，需要在 Vercel 中配置：
-
-1. 进入项目 Dashboard
-2. 点击 **Settings** > **Environment Variables**
-3. 添加环境变量
 
 ---
 
 ### 步骤 5: 验证部署
 
-部署完成后，Vercel 会提供一个 URL（如 `https://love-gift-blog.vercel.app`）。
+部署完成后，Vercel 会提供一个 URL（如 `https://77may.vercel.app`）。
 
-访问该 URL 验证：
-- 页面是否正常加载
-- 所有功能是否正常工作
-- 样式是否正确渲染
+**验证内容：**
+- ✅ 页面正常加载
+- ✅ 文章列表显示
+- ✅ 创建/编辑/删除文章功能
+- ✅ 多设备同步测试（在手机和电脑上同时打开，修改内容验证同步）
 
 ---
 
-## Vite 配置说明
+## 后端 API 说明
 
-项目的 `vite.config.ts` 已配置为相对路径：
+### API 端点
 
-```typescript
-export default defineConfig({
-  base: './',  // 相对路径，确保静态资源正确加载
-  plugins: [react()],
-  resolve: {
-    alias: {
-      "@": path.resolve(__dirname, "./src"),
-    },
-  },
-});
+| 方法 | 端点 | 说明 |
+|------|------|------|
+| GET | `/api/articles` | 获取所有文章 |
+| GET | `/api/articles/:id` | 获取单篇文章 |
+| POST | `/api/articles` | 创建新文章 |
+| PUT | `/api/articles/:id` | 更新文章 |
+| DELETE | `/api/articles/:id` | 删除文章 |
+
+### 请求示例
+
+**创建文章：**
+```bash
+curl -X POST https://77may.vercel.app/api/articles \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "新文章标题",
+    "content": "文章内容",
+    "excerpt": "文章摘要",
+    "tags": ["React", "TypeScript"]
+  }'
 ```
-
-> **注意**: `base: './'` 确保部署后静态资源路径正确。
 
 ---
 
@@ -151,33 +153,70 @@ export default defineConfig({
 
 ```
 love-gift-blog/
+├── api/                     # Vercel Serverless API
+│   └── articles/
+│       ├── route.ts         # GET/POST 文章
+│       └── [id]/route.ts    # GET/PUT/DELETE 单篇文章
+├── prisma/                  # Prisma 配置
+│   ├── schema.prisma        # 数据库模型
+│   └── prisma.config.ts     # Prisma 配置文件
 ├── src/
 │   ├── components/          # UI 组件
 │   │   ├── ui/             # shadcn/ui 组件
-│   │   ├── ArticleForm.tsx # 文章表单组件
-│   │   └── Navbar.tsx      # 导航栏组件
-│   ├── context/            # React Context
-│   │   └── ArticleContext.tsx
-│   ├── data/               # 模拟数据
-│   │   └── articles.ts
-│   ├── hooks/              # 自定义 Hooks
-│   │   └── use-mobile.ts
-│   ├── lib/                # 工具函数
+│   │   ├── ArticleForm.tsx
+│   │   └── Navbar.tsx
+│   ├── context/
+│   │   └── ArticleContext.tsx  # 数据同步上下文
+│   ├── data/
+│   │   └── articles.ts      # 初始数据
+│   ├── hooks/
+│   │   ├── use-mobile.ts
+│   │   └── useArticleSync.ts   # 同步 Hook
+│   ├── services/
+│   │   └── articleService.ts   # API 服务层
+│   ├── lib/
 │   │   └── utils.ts
-│   ├── pages/              # 页面组件
+│   ├── pages/
 │   │   ├── About.tsx
 │   │   ├── ArticleDetail.tsx
 │   │   ├── ArticleList.tsx
 │   │   └── TagPage.tsx
-│   ├── App.tsx             # 主应用组件
-│   ├── main.tsx            # 入口文件
-│   ├── App.css             # 应用样式
-│   └── index.css           # 全局样式
-├── package.json            # 依赖配置
-├── vite.config.ts          # Vite 配置
-├── tsconfig.json           # TypeScript 配置
-├── tailwind.config.cjs     # Tailwind 配置
-└── postcss.config.js       # PostCSS 配置
+│   ├── App.tsx
+│   ├── main.tsx
+│   ├── App.css
+│   └── index.css
+├── .env                     # 环境变量
+├── package.json
+├── vite.config.ts
+├── tsconfig.json
+├── tailwind.config.cjs
+└── postcss.config.js
+```
+
+---
+
+## 数据同步机制
+
+### 工作原理
+
+1. **定时刷新**: 前端每 5 秒自动请求后端获取最新数据
+2. **即时更新**: CRUD 操作后立即更新本地状态
+3. **冲突处理**: 以服务器数据为准，自动覆盖本地更改
+
+### 同步流程
+
+```
+设备 A 修改文章
+    ↓
+发送 PUT 请求到 API
+    ↓
+服务器更新数据库
+    ↓
+设备 B 定时轮询（每5秒）
+    ↓
+获取更新后的文章
+    ↓
+自动更新 UI
 ```
 
 ---
@@ -188,69 +227,48 @@ love-gift-blog/
 |------|------|
 | `npm run dev` | 启动开发服务器 |
 | `npm run build` | 构建生产版本 |
-| `npm run lint` | 运行 ESLint 检查 |
-| `npm run preview` | 预览构建结果 |
+| `npm run lint` | 运行 ESLint |
+| `npx prisma migrate dev` | 开发环境数据库迁移 |
+| `npx prisma migrate deploy` | 生产环境数据库迁移 |
+| `npx prisma studio` | 打开数据库管理界面 |
 
 ---
 
 ## 故障排除
 
-### 构建失败
+### 数据库连接失败
 
-1. **检查依赖**: 确保所有依赖已安装
-   ```bash
-   rm -rf node_modules package-lock.json
-   npm install
-   ```
+1. 确保环境变量 `DATABASE_URL` 已正确配置
+2. 检查 Prisma 版本是否兼容
 
-2. **检查 TypeScript 错误**: 运行 `npx tsc` 检查类型错误
+### API 404 错误
 
-3. **检查 Node 版本**: 确保使用 Node.js 20+
+- 确保 `api/` 目录结构正确
+- 检查 Vercel 部署日志
 
-### 部署后样式丢失
+### 同步延迟
 
-- 确保 `vite.config.ts` 中 `base: './'` 配置正确
-- 确保 `tailwind.config.cjs` 配置正确
-
-### 路由问题
-
-- 使用 React Router DOM 的 `BrowserRouter` 时，Vercel 会自动配置回退路由
-- 如果使用 `HashRouter`，需要配置 `base` 路径
+- 检查网络连接
+- 同步间隔默认为 5 秒，可在 `useArticleSync.ts` 中调整
 
 ---
 
 ## CI/CD 集成
 
-Vercel 会自动检测 GitHub 仓库的变化并触发部署：
+Vercel 会自动检测 GitHub 变化：
 
-1. 每次推送到 `main` 分支会自动部署到生产环境
-2. 每次推送到其他分支会创建预览部署
-
-可以在 Vercel Dashboard 中配置：
-- 部署分支策略
-- 环境变量
-- 构建命令
-
----
-
-## 自定义域名
-
-如需使用自定义域名：
-
-1. 在 Vercel Dashboard 中进入项目
-2. 点击 **Settings** > **Domains**
-3. 添加自定义域名
-4. 在 DNS 服务商处配置 CNAME 记录
+1. ✅ 推送到 `main` 分支 → 自动部署到生产环境
+2. ✅ 推送到其他分支 → 创建预览部署
 
 ---
 
 ## 总结
 
-部署流程：
-1. ✅ 确保项目可构建
-2. ✅ 推送到 GitHub
-3. ✅ 在 Vercel 中导入仓库
-4. ✅ 配置构建设置
-5. ✅ 部署并验证
+部署完成后，你的博客应用将具备：
 
-完成以上步骤后，你的博客应用就成功部署到 Vercel 了！
+- ✅ 全栈 CRUD 功能
+- ✅ 多设备数据同步
+- ✅ SQLite 数据库持久化
+- ✅ 自动部署流水线
+
+现在你可以在手机、电脑等多个设备上访问应用，所有更改都会自动同步！

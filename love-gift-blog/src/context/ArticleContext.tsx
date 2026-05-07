@@ -1,64 +1,95 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import type { ReactNode } from 'react';
 import type { Article, Tag } from '@/data/articles';
-import { articles as initialArticles, tags as initialTags } from '@/data/articles';
-
-const STORAGE_KEY = 'love-gift-articles';
+import { tags as initialTags } from '@/data/articles';
+import { fetchArticles, createArticle, updateArticle, deleteArticle, fetchArticle } from '../services/articleService';
 
 interface ArticleContextType {
   articles: Article[];
   tags: Tag[];
+  loading: boolean;
+  error: string | null;
+  lastSync: Date;
   addArticle: (article: Omit<Article, 'id'>) => void;
   updateArticle: (id: string, article: Partial<Article>) => void;
   deleteArticle: (id: string) => void;
   getArticleById: (id: string) => Article | undefined;
+  refresh: () => void;
 }
 
 const ArticleContext = createContext<ArticleContextType | undefined>(undefined);
 
-function loadArticles(): Article[] {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      return JSON.parse(stored);
-    }
-  } catch (e) {
-    console.error('Failed to load articles from localStorage:', e);
-  }
-  return initialArticles;
-}
-
 export function ArticleProvider({ children }: { children: ReactNode }) {
-  const [articles, setArticles] = useState<Article[]>(loadArticles);
+  const [articles, setArticles] = useState<Article[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [lastSync, setLastSync] = useState<Date>(new Date());
+
+  const loadArticles = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await fetchArticles();
+      setArticles(data);
+      setLastSync(new Date());
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load articles');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
+    loadArticles();
+  }, [loadArticles]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      loadArticles();
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [loadArticles]);
+
+  const addArticle = async (articleData: Omit<Article, 'id'>) => {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(articles));
-    } catch (e) {
-      console.error('Failed to save articles to localStorage:', e);
+      const newArticle = await createArticle({
+        title: articleData.title,
+        content: articleData.content,
+        excerpt: articleData.excerpt,
+        tags: articleData.tags,
+      });
+      setArticles(prev => [newArticle, ...prev]);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create article');
     }
-  }, [articles]);
-
-  const addArticle = (article: Omit<Article, 'id'>) => {
-    const newArticle: Article = {
-      ...article,
-      id: Date.now().toString(),
-    };
-    setArticles([newArticle, ...articles]);
   };
 
-  const updateArticle = (id: string, updatedArticle: Partial<Article>) => {
-    setArticles(articles.map(article => 
-      article.id === id ? { ...article, ...updatedArticle } : article
-    ));
+  const handleUpdate = async (id: string, updatedArticle: Partial<Article>) => {
+    try {
+      const updated = await updateArticle(id, updatedArticle);
+      setArticles(prev => prev.map(article => 
+        article.id === id ? { ...article, ...updated } : article
+      ));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update article');
+    }
   };
 
-  const deleteArticle = (id: string) => {
-    setArticles(articles.filter(article => article.id !== id));
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteArticle(id);
+      setArticles(prev => prev.filter(article => article.id !== id));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete article');
+    }
   };
 
   const getArticleById = (id: string) => {
     return articles.find(article => article.id === id);
+  };
+
+  const refresh = () => {
+    loadArticles();
   };
 
   return (
@@ -66,10 +97,14 @@ export function ArticleProvider({ children }: { children: ReactNode }) {
       value={{
         articles,
         tags: initialTags,
+        loading,
+        error,
+        lastSync,
         addArticle,
-        updateArticle,
-        deleteArticle,
+        updateArticle: handleUpdate,
+        deleteArticle: handleDelete,
         getArticleById,
+        refresh,
       }}
     >
       {children}
