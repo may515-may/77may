@@ -9,13 +9,20 @@ interface RawArticle {
   title: string;
   content: string;
   excerpt: string;
-  tags: string[];
+  tags: string;
   createdAt: string;
   updatedAt: string;
 }
 
 function convertToFrontendArticle(raw: RawArticle, allTags: Tag[]): Article {
-  const tagObjects = raw.tags.map(tagId => 
+  let tagIds: string[] = [];
+  try {
+    tagIds = JSON.parse(raw.tags);
+  } catch {
+    tagIds = [];
+  }
+  
+  const tagObjects = tagIds.map(tagId => 
     allTags.find(t => t.id === tagId) || { id: tagId, name: tagId, color: 'bg-gray-100 text-gray-700' }
   );
   
@@ -44,7 +51,7 @@ export async function fetchArticles(): Promise<Article[]> {
 }
 
 export async function fetchArticle(id: string): Promise<Article> {
-  const response = await fetch(`${API_URL}/articles/${id}`);
+  const response = await fetch(`${API_URL}/articles?id=${id}`);
   if (!response.ok) {
     throw new Error('Failed to fetch article');
   }
@@ -76,13 +83,13 @@ export async function createArticle(article: Omit<Article, 'id'>): Promise<Artic
 }
 
 export async function updateArticle(id: string, article: Partial<Article>): Promise<Article> {
-  const payload: Partial<RawArticle> = {};
+  const payload: any = {};
   if (article.title) payload.title = article.title;
   if (article.content) payload.content = article.content;
   if (article.excerpt) payload.excerpt = article.excerpt;
   if (article.tags) payload.tags = article.tags.map(tag => tag.id);
   
-  const response = await fetch(`${API_URL}/articles/${id}`, {
+  const response = await fetch(`${API_URL}/articles?id=${id}`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
@@ -98,7 +105,7 @@ export async function updateArticle(id: string, article: Partial<Article>): Prom
 }
 
 export async function deleteArticle(id: string): Promise<void> {
-  const response = await fetch(`${API_URL}/articles/${id}`, {
+  const response = await fetch(`${API_URL}/articles?id=${id}`, {
     method: 'DELETE',
   });
   if (!response.ok) {

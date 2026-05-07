@@ -14,8 +14,8 @@
 | 样式框架 | Tailwind CSS | 3.4.19 |
 | 组件库 | shadcn/ui + Radix UI | - |
 | 路由 | React Router DOM | 7.15.0 |
-| 数据库 | SQLite + Prisma | - |
-| ORM | Prisma | 7.x |
+| 数据库 | SQLite + Prisma | 7.x |
+| 部署平台 | Vercel | - |
 
 ### 核心功能
 
@@ -43,6 +43,9 @@
 # 安装依赖
 npm install
 
+# 生成 Prisma Client
+npx prisma generate
+
 # 构建项目
 npm run build
 ```
@@ -55,7 +58,7 @@ npm run build
 
 ```bash
 git add .
-git commit -m "Add backend with Prisma SQLite"
+git commit -m "Ready for deployment"
 git push origin main
 ```
 
@@ -92,24 +95,7 @@ git push origin main
 
 ---
 
-### 步骤 4: 数据库迁移（首次部署）
-
-部署完成后，需要初始化数据库：
-
-```bash
-# 安装 Vercel CLI
-npm install -g vercel
-
-# 登录
-vercel login
-
-# 运行数据库迁移
-vercel run npx prisma migrate deploy --prod
-```
-
----
-
-### 步骤 5: 验证部署
+### 步骤 4: 验证部署
 
 部署完成后，Vercel 会提供一个 URL（如 `https://77may.vercel.app`）。
 
@@ -128,10 +114,10 @@ vercel run npx prisma migrate deploy --prod
 | 方法 | 端点 | 说明 |
 |------|------|------|
 | GET | `/api/articles` | 获取所有文章 |
-| GET | `/api/articles/:id` | 获取单篇文章 |
+| GET | `/api/articles?id=:id` | 获取单篇文章 |
 | POST | `/api/articles` | 创建新文章 |
-| PUT | `/api/articles/:id` | 更新文章 |
-| DELETE | `/api/articles/:id` | 删除文章 |
+| PUT | `/api/articles?id=:id` | 更新文章 |
+| DELETE | `/api/articles?id=:id` | 删除文章 |
 
 ### 请求示例
 
@@ -143,7 +129,7 @@ curl -X POST https://77may.vercel.app/api/articles \
     "title": "新文章标题",
     "content": "文章内容",
     "excerpt": "文章摘要",
-    "tags": ["React", "TypeScript"]
+    "tags": ["birthday", "anniversary"]
   }'
 ```
 
@@ -153,13 +139,11 @@ curl -X POST https://77may.vercel.app/api/articles \
 
 ```
 love-gift-blog/
-├── api/                     # Vercel Serverless API
-│   └── articles/
-│       ├── route.ts         # GET/POST 文章
-│       └── [id]/route.ts    # GET/PUT/DELETE 单篇文章
+├── api/                     # Vercel Serverless Functions
+│   └── articles.ts          # 文章 API（GET/POST/PUT/DELETE）
 ├── prisma/                  # Prisma 配置
 │   ├── schema.prisma        # 数据库模型
-│   └── prisma.config.ts     # Prisma 配置文件
+│   └── migrations/          # 数据库迁移文件
 ├── src/
 │   ├── components/          # UI 组件
 │   │   ├── ui/             # shadcn/ui 组件
@@ -168,7 +152,7 @@ love-gift-blog/
 │   ├── context/
 │   │   └── ArticleContext.tsx  # 数据同步上下文
 │   ├── data/
-│   │   └── articles.ts      # 初始数据
+│   │   └── articles.ts      # 初始数据和类型定义
 │   ├── hooks/
 │   │   ├── use-mobile.ts
 │   │   └── useArticleSync.ts   # 同步 Hook
@@ -185,7 +169,10 @@ love-gift-blog/
 │   ├── main.tsx
 │   ├── App.css
 │   └── index.css
-├── .env                     # 环境变量
+├── .env                     # 环境变量（本地）
+├── .env.example             # 环境变量示例
+├── .gitignore
+├── vercel.json              # Vercel 配置
 ├── package.json
 ├── vite.config.ts
 ├── tsconfig.json
@@ -228,8 +215,8 @@ love-gift-blog/
 | `npm run dev` | 启动开发服务器 |
 | `npm run build` | 构建生产版本 |
 | `npm run lint` | 运行 ESLint |
+| `npx prisma generate` | 生成 Prisma Client |
 | `npx prisma migrate dev` | 开发环境数据库迁移 |
-| `npx prisma migrate deploy` | 生产环境数据库迁移 |
 | `npx prisma studio` | 打开数据库管理界面 |
 
 ---
@@ -250,6 +237,15 @@ love-gift-blog/
 
 - 检查网络连接
 - 同步间隔默认为 5 秒，可在 `useArticleSync.ts` 中调整
+
+### 构建失败
+
+```bash
+# 清理缓存
+rm -rf node_modules dist
+npm install
+npm run build
+```
 
 ---
 
